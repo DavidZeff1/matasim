@@ -18,6 +18,38 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 
+
+def _configure_tesseract() -> None:
+    """Point pytesseract at the right binary when it isn't on PATH.
+
+    Needed on Windows (default installer doesn't add to PATH) and on macOS
+    when launched via Finder (.command files inherit a minimal PATH that
+    excludes /opt/homebrew/bin and /usr/local/bin)."""
+    import os, shutil, sys
+    if shutil.which("tesseract"):
+        return
+    if sys.platform.startswith("win"):
+        candidates = [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe"),
+        ]
+    elif sys.platform == "darwin":
+        candidates = [
+            "/opt/homebrew/bin/tesseract",   # Apple Silicon Homebrew
+            "/usr/local/bin/tesseract",      # Intel Homebrew
+            "/opt/local/bin/tesseract",      # MacPorts
+        ]
+    else:
+        candidates = []
+    for path in candidates:
+        if os.path.isfile(path):
+            pytesseract.pytesseract.tesseract_cmd = path
+            return
+
+
+_configure_tesseract()
+
 RECIPIENT_LABEL = "תשלום זה ניתן עבור"
 # Common OCR fragments that bleed in from the next label ("שם המוטב",
 # "כתובת המוטב") when the name line wraps. Trimmed from the tail of the name.
