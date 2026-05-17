@@ -37,7 +37,7 @@ def _configure_tesseract() -> None:
 
 _configure_tesseract()
 
-RECIPIENT_LABEL = "תשלום זה ניתן עבור"
+RECIPIENT_LABELS = ("תשלום זה ניתן עבור", "שם המוטב")
 # Common OCR fragments that bleed in from the next label ("שם המוטב",
 # "כתובת המוטב") when the name line wraps. Trimmed from the tail of the name.
 TRAILING_NOISE = ("מו", "כת", "שם", "המ")
@@ -51,10 +51,13 @@ def ocr_page(page: fitz.Page, dpi: int) -> str:
 
 
 def extract_recipient(ocr_text: str) -> str | None:
-    for raw_line in ocr_page_lines(ocr_text):
-        if RECIPIENT_LABEL in raw_line:
-            _, _, after = raw_line.partition(":")
-            return clean_name(after)
+    for label in RECIPIENT_LABELS:
+        for raw_line in ocr_page_lines(ocr_text):
+            if label in raw_line:
+                _, _, after = raw_line.partition(":")
+                name = clean_name(after)
+                if name:
+                    return name
     return None
 
 
